@@ -1,0 +1,76 @@
+diff --git a/ext/date/lib/parse_tz.c b/ext/date/lib/parse_tz.c
+index 009a2ad..2167762 100644
+--- a/ext/date/lib/parse_tz.c
++++ b/ext/date/lib/parse_tz.c
+@@ -26,6 +26,8 @@
+ #include <locale.h>
+ #endif
+ 
++#define LC_CTYPE "C"
++
+ #ifdef HAVE_STRING_H
+ #include <string.h>
+ #else
+diff --git a/ext/pcre/php_pcre.c b/ext/pcre/php_pcre.c
+index b18c9ed..7892a89 100644
+--- a/ext/pcre/php_pcre.c
++++ b/ext/pcre/php_pcre.c
+@@ -25,6 +25,8 @@
+ #include "ext/standard/info.h"
+ #include "ext/standard/php_smart_str.h"
+ 
++#define LC_CTYPE "C"
++
+ #if HAVE_PCRE || HAVE_BUNDLED_PCRE
+ 
+ #include "ext/standard/php_string.h"
+diff --git a/ext/standard/dns.c b/ext/standard/dns.c
+index 53483ff..4c8215a 100644
+--- a/ext/standard/dns.c
++++ b/ext/standard/dns.c
+@@ -120,6 +120,27 @@
+ #endif
+ /* }}} */
+ 
++#include "../../../compat/nameser.h"
++#define T_A DNS_T_A
++#define T_ANY DNS_T_ANY
++#define T_MX DNS_T_MX
++#define C_IN 0
++typedef struct HEADER {
++int qdcount;
++int ancount;
++int nscount;
++int arcount;
++} HEADER;
++
++// #undef HAVE_RES_NSEARCH
++/*
++#if defined(HAVE_DNS_SEARCH)
++	struct sockaddr_storage from;
++	uint32_t fromsize = sizeof(from);
++	dns_handle_t handle;
++#elif defined(HAVE_RES_NSEARCH)
++*/
++
+ static char *php_gethostbyaddr(char *ip);
+ static char *php_gethostbyname(char *name);
+ 
+diff --git a/ext/standard/string.c b/ext/standard/string.c
+index 9154b32..8f8394b 100644
+--- a/ext/standard/string.c
++++ b/ext/standard/string.c
+@@ -99,6 +99,13 @@ void register_string_constants(INIT_FUNC_ARGS)
+ 	REGISTER_LONG_CONSTANT("CHAR_MAX", CHAR_MAX, CONST_CS | CONST_PERSISTENT);
+ #endif
+ 
++#define LC_CTYPE "C"
++#define LC_NUMERIC "C"
++#define LC_TIME "C"
++#define LC_ALL "C"
++#define LC_COLLATE "C"
++#define LC_MONETARY "C"
++
+ #ifdef HAVE_LOCALE_H
+ 	REGISTER_LONG_CONSTANT("LC_CTYPE", LC_CTYPE, CONST_CS | CONST_PERSISTENT);
+ 	REGISTER_LONG_CONSTANT("LC_NUMERIC", LC_NUMERIC, CONST_CS | CONST_PERSISTENT);
