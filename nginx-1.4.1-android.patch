@@ -1,0 +1,120 @@
+diff --git a/auto/feature b/auto/feature
+index c13e51d..271beb0 100644
+--- a/auto/feature
++++ b/auto/feature
+@@ -121,3 +121,7 @@ else
+ fi
+ 
+ rm $NGX_AUTOTEST*
++
++
++########## nginx
++ngx_found=yes
+\ No newline at end of file
+diff --git a/auto/lib/md5/conf b/auto/lib/md5/conf
+index eb5dfd1..3ece4f0 100644
+--- a/auto/lib/md5/conf
++++ b/auto/lib/md5/conf
+@@ -2,7 +2,6 @@
+ # Copyright (C) Igor Sysoev
+ # Copyright (C) Nginx, Inc.
+ 
+-
+ if [ $MD5 != NONE ]; then
+ 
+     if grep MD5_Init $MD5/md5.h 2>&1 >/dev/null; then
+diff --git a/auto/sources b/auto/sources
+index 90465c3..28c9506 100644
+--- a/auto/sources
++++ b/auto/sources
+@@ -67,6 +67,10 @@ CORE_SRCS="src/core/nginx.c \
+            src/core/ngx_conf_file.c \
+            src/core/ngx_resolver.c \
+            src/core/ngx_open_file_cache.c \
++           src/core/glob.c \
++           src/core/crypt.c \
++           src/core/md5.c \
++           src/core/des.c \
+            src/core/ngx_crypt.c"
+ 
+ 
+@@ -108,8 +112,8 @@ WIN32_SELECT_SRCS=src/event/modules/ngx_win32_select_module.c
+ POLL_MODULE=ngx_poll_module
+ POLL_SRCS=src/event/modules/ngx_poll_module.c
+ 
+-KQUEUE_MODULE=ngx_kqueue_module
+-KQUEUE_SRCS=src/event/modules/ngx_kqueue_module.c
++#KQUEUE_MODULE=ngx_kqueue_module
++#KQUEUE_SRCS=src/event/modules/ngx_kqueue_module.c
+ 
+ DEVPOLL_MODULE=ngx_devpoll_module
+ DEVPOLL_SRCS=src/event/modules/ngx_devpoll_module.c
+diff --git a/auto/types/sizeof b/auto/types/sizeof
+index e1d405c..39633fd 100644
+--- a/auto/types/sizeof
++++ b/auto/types/sizeof
+@@ -47,6 +47,7 @@ fi
+ 
+ rm -f $NGX_AUTOTEST
+ 
++ngx_size=4
+ 
+ case $ngx_size in
+     4)
+diff --git a/auto/unix b/auto/unix
+index cd4209e..36f4256 100755
+--- a/auto/unix
++++ b/auto/unix
+@@ -67,7 +67,8 @@ if [ $ngx_found = yes ]; then
+     EVENT_FOUND=YES
+ fi
+ 
+-
++NGX_KQUEUE_CHECKED=
++ngx_found=no
+ if test -z "$NGX_KQUEUE_CHECKED"; then
+     ngx_feature="kqueue"
+     ngx_feature_name="NGX_HAVE_KQUEUE"
+diff --git a/src/event/modules/ngx_devpoll_module.c b/src/event/modules/ngx_devpoll_module.c
+index 6fdd002..a22bca4 100644
+--- a/src/event/modules/ngx_devpoll_module.c
++++ b/src/event/modules/ngx_devpoll_module.c
+@@ -9,8 +9,12 @@
+ #include <ngx_core.h>
+ #include <ngx_event.h>
+ 
++#include <sys/poll.h>
+ 
+-#if (NGX_TEST_BUILD_DEVPOLL)
++
++
++
++#if (NGX_TEST_BUILD_DEVPOLL || 1)
+ 
+ /* Solaris declarations */
+ 
+diff --git a/src/event/modules/ngx_epoll_module.c b/src/event/modules/ngx_epoll_module.c
+index ee77d8e..c77b735 100644
+--- a/src/event/modules/ngx_epoll_module.c
++++ b/src/event/modules/ngx_epoll_module.c
+@@ -9,6 +9,8 @@
+ #include <ngx_core.h>
+ #include <ngx_event.h>
+ 
++#include <sys/epoll.h>
++
+ 
+ #if (NGX_TEST_BUILD_EPOLL)
+ 
+diff --git a/src/os/unix/ngx_shmem.c b/src/os/unix/ngx_shmem.c
+index 3ec7cbf..2715d76 100644
+--- a/src/os/unix/ngx_shmem.c
++++ b/src/os/unix/ngx_shmem.c
+@@ -8,7 +8,6 @@
+ #include <ngx_config.h>
+ #include <ngx_core.h>
+ 
+-
+ #if (NGX_HAVE_MAP_ANON)
+ 
+ ngx_int_t
