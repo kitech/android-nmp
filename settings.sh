@@ -15,8 +15,11 @@ NDK_UNAME=`uname -s | tr '[A-Z]' '[a-z]'`
 NDK_TOOLCHAIN_BASE=$NDK_BASE/toolchains/arm-linux-androideabi-4.7/prebuilt/$NDK_UNAME-x86_64
 ACC="$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-gcc --sysroot=$NDK_SYSROOT"
 # ACC="$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-gcc"
+ACXX="$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-g++ --sysroot=$NDK_SYSROOT"
 ALD=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-ld
 AELF=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-readelf
+AAR=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-ar
+AAS=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-as
 
 NDK_LDPATH="-L${NDK_SYSROOT}/usr/lib"
 
