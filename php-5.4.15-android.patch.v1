@@ -11,6 +11,21 @@ index d6e5ccf..82a6e7f 100644
  #else
  #include "malloc.h"
  #include "memory.h"
+diff --git a/ext/sqlite3/libsqlite/sqlite3.c b/ext/sqlite3/libsqlite/sqlite3.c
+index d96367e..fca2044 100644
+--- a/ext/sqlite3/libsqlite/sqlite3.c
++++ b/ext/sqlite3/libsqlite/sqlite3.c
+@@ -27609,6 +27609,10 @@ SQLITE_API int sqlite3_fullsync_count = 0;
+ # define fdatasync fsync
+ #endif
+ 
++#if !defined(fdatasync) && defined(ANDROID)
++# define fdatasync fsync
++#endif
++
+ /*
+ ** Define HAVE_FULLFSYNC to 0 or 1 depending on whether or not
+ ** the F_FULLFSYNC macro is defined.  F_FULLFSYNC is currently
 diff --git a/ext/standard/dns.c b/ext/standard/dns.c
 index 3584fc1..fb5fea2 100644
 --- a/ext/standard/dns.c
