@@ -20,6 +20,7 @@ ALD=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-ld
 AELF=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-readelf
 AAR=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-ar
 AAS=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-as
+ARANLIB=$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-ranlib
 
 NDK_LDPATH="-L${NDK_SYSROOT}/usr/lib"
 
