@@ -1,0 +1,160 @@
+diff --git a/Zend/zend_strtod.c b/Zend/zend_strtod.c
+index d6e5ccf..82a6e7f 100644
+--- a/Zend/zend_strtod.c
++++ b/Zend/zend_strtod.c
+@@ -183,7 +183,7 @@ typedef unsigned long int uint32_t;
+ #ifndef KR_headers
+ #include "stdlib.h"
+ #include "string.h"
+-#include "locale.h"
++//#include "locale.h"
+ #else
+ #include "malloc.h"
+ #include "memory.h"
+diff --git a/ext/sqlite3/libsqlite/sqlite3.c b/ext/sqlite3/libsqlite/sqlite3.c
+index 784be51..f180083 100644
+--- a/ext/sqlite3/libsqlite/sqlite3.c
++++ b/ext/sqlite3/libsqlite/sqlite3.c
+@@ -27609,6 +27609,10 @@ SQLITE_API int sqlite3_fullsync_count = 0;
+ # define fdatasync fsync
+ #endif
+ 
++#if !defined(fdatasync) && defined(ANDROID)
++# define fdatasync fsync
++#endif
++
+ /*
+ ** Define HAVE_FULLFSYNC to 0 or 1 depending on whether or not
+ ** the F_FULLFSYNC macro is defined.  F_FULLFSYNC is currently
+diff --git a/ext/standard/basic_functions.c b/ext/standard/basic_functions.c
+index 9c91404..e182745 100644
+--- a/ext/standard/basic_functions.c
++++ b/ext/standard/basic_functions.c
+@@ -1861,6 +1861,7 @@ ZEND_BEGIN_ARG_INFO(arginfo_getlastmod, 0)
+ ZEND_END_ARG_INFO()
+ /* }}} */
+ /* {{{ password.c */
++/*
+ ZEND_BEGIN_ARG_INFO_EX(arginfo_password_hash, 0, 0, 2)
+ 	ZEND_ARG_INFO(0, password)
+ 	ZEND_ARG_INFO(0, algo)
+@@ -1878,6 +1879,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_password_verify, 0, 0, 2)
+ 	ZEND_ARG_INFO(0, password)
+ 	ZEND_ARG_INFO(0, hash)
+ ZEND_END_ARG_INFO()
++*/
+ /* }}} */
+ /* {{{ proc_open.c */
+ #ifdef PHP_CAN_SUPPORT_PROC_OPEN
+@@ -2888,11 +2890,12 @@ const zend_function_entry basic_functions[] = { /* {{{ */
+ 
+ 	PHP_FE(base64_decode,													arginfo_base64_decode)
+ 	PHP_FE(base64_encode,													arginfo_base64_encode)
+-
++    /*
+ 	PHP_FE(password_hash,													arginfo_password_hash)
+ 	PHP_FE(password_get_info,												arginfo_password_get_info)
+ 	PHP_FE(password_needs_rehash,											arginfo_password_needs_rehash)
+ 	PHP_FE(password_verify,													arginfo_password_verify)
++    */
+ 	PHP_FE(convert_uuencode,												arginfo_convert_uuencode)
+ 	PHP_FE(convert_uudecode,												arginfo_convert_uudecode)
+ 
+@@ -3644,7 +3647,7 @@ PHP_MINIT_FUNCTION(basic) /* {{{ */
+ 	BASIC_MINIT_SUBMODULE(browscap)
+ 	BASIC_MINIT_SUBMODULE(standard_filters)
+ 	BASIC_MINIT_SUBMODULE(user_filters)
+-	BASIC_MINIT_SUBMODULE(password)
++        //	BASIC_MINIT_SUBMODULE(password)
+ 
+ #if defined(HAVE_LOCALECONV) && defined(ZTS)
+ 	BASIC_MINIT_SUBMODULE(localeconv)
+diff --git a/ext/standard/dns.c b/ext/standard/dns.c
+index 3584fc1..fb5fea2 100644
+--- a/ext/standard/dns.c
++++ b/ext/standard/dns.c
+@@ -120,6 +120,19 @@
+ #endif
+ /* }}} */
+ 
++#include "../../../compat/nameser.h"
++#define T_A DNS_T_A
++#define T_ANY DNS_T_ANY
++#define T_MX DNS_T_MX
++#define C_IN 0
++typedef struct HEADER {
++int qdcount;
++int ancount;
++int nscount;
++int arcount;
++} HEADER;
++
++
+ static char *php_gethostbyaddr(char *ip);
+ static char *php_gethostbyname(char *name);
+ 
+diff --git a/main/main.c b/main/main.c
+index b70f43a..818694d 100644
+--- a/main/main.c
++++ b/main/main.c
+@@ -50,7 +50,7 @@
+ #include <signal.h>
+ #endif
+ #if HAVE_SETLOCALE
+-#include <locale.h>
++// #include <locale.h>
+ #endif
+ #include "zend.h"
+ #include "zend_extensions.h"
+diff --git a/sapi/cgi/cgi_main.c b/sapi/cgi/cgi_main.c
+index 9e6b74a..647e5f6 100644
+--- a/sapi/cgi/cgi_main.c
++++ b/sapi/cgi/cgi_main.c
+@@ -52,7 +52,7 @@
+ #endif
+ 
+ #if HAVE_SETLOCALE
+-# include <locale.h>
++//# include <locale.h>
+ #endif
+ 
+ #if HAVE_SYS_TYPES_H
+diff --git a/sapi/cli/php_cli.c b/sapi/cli/php_cli.c
+index 7290523..b0c5c25 100644
+--- a/sapi/cli/php_cli.c
++++ b/sapi/cli/php_cli.c
+@@ -50,7 +50,7 @@
+ #include <signal.h>
+ #endif
+ #if HAVE_SETLOCALE
+-#include <locale.h>
++//#include <locale.h>
+ #endif
+ #include "zend.h"
+ #include "zend_extensions.h"
+diff --git a/sapi/cli/php_cli_server.c b/sapi/cli/php_cli_server.c
+index 5c9b2e8..39f7466 100644
+--- a/sapi/cli/php_cli_server.c
++++ b/sapi/cli/php_cli_server.c
+@@ -52,7 +52,7 @@
+ #include <signal.h>
+ #endif
+ #if HAVE_SETLOCALE
+-#include <locale.h>
++//#include <locale.h>
+ #endif
+ #if HAVE_DLFCN_H
+ #include <dlfcn.h>
+diff --git a/sapi/fpm/fpm/fpm_main.c b/sapi/fpm/fpm/fpm_main.c
+index 043e0e0..47d2e31 100644
+--- a/sapi/fpm/fpm/fpm_main.c
++++ b/sapi/fpm/fpm/fpm_main.c
+@@ -56,7 +56,7 @@
+ #endif
+ 
+ #if HAVE_SETLOCALE
+-# include <locale.h>
++// # include <locale.h>
+ #endif
+ 
+ #if HAVE_SYS_TYPES_H
