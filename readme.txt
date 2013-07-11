@@ -7,6 +7,8 @@ android-nginx:
 *) 启动时需要把nginx放到/data/local/tmp/nginx目录
 *) 或者把/sdcard/重新挂载，支持rw挂载参数，mount -o remount,rw /mnt/sdcard
 *) ifconfig wlan0 当前IP。
+*) adb shell后执行bash能得到一个更好用些的shell
+*) adb forward tcp:8080 tcp:80  可把本地端口转到手机端口，不过本地端口开在localhost上
 
 
 

@@ -1,5 +1,6 @@
 PHP的dns.c功能不全
 PHP-5.5的password功能
 libmcrypt库
+二进制的程序和库文件需要strip
 
 
