@@ -1,0 +1,579 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5ba6611..da03b31 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -266,7 +266,7 @@ MYSQL_CHECK_ZLIB_WITH_COMPRESS()
+ # Optionally add bundled yassl/taocrypt or system openssl.
+ MYSQL_CHECK_SSL()
+ # Add readline or libedit.
+-MYSQL_CHECK_READLINE()
++# MYSQL_CHECK_READLINE()
+ 
+ #
+ # Setup maintainer mode options by the end. Platform checks are
+diff --git a/client/mysql.cc b/client/mysql.cc
+index 5deb978..d04217b 100644
+--- a/client/mysql.cc
++++ b/client/mysql.cc
+@@ -2439,6 +2439,7 @@ static void initialize_readline (char *name)
+   /* Allow conditional parsing of the ~/.inputrc file. */
+   rl_readline_name = name;
+ 
++#define USE_NEW_READLINE_INTERFACE 1
+   /* Tell the completer that we want a crack first. */
+ #if defined(USE_NEW_READLINE_INTERFACE)
+   rl_attempted_completion_function= (rl_completion_func_t*)&new_mysql_completion;
+diff --git a/include/m_string.h b/include/m_string.h
+index bb76d92..7887de3 100644
+--- a/include/m_string.h
++++ b/include/m_string.h
+@@ -270,11 +270,11 @@ static inline const uchar *skip_trailing_space(const uchar *ptr,size_t len)
+   if (len > 20)
+   {
+     const uchar *end_words= (const uchar *)(intptr)
+-      (((ulonglong)(intptr)end) / SIZEOF_INT * SIZEOF_INT);
++      (((ulonglong)(int*)end) / SIZEOF_INT * SIZEOF_INT);
+     const uchar *start_words= (const uchar *)(intptr)
+-       ((((ulonglong)(intptr)ptr) + SIZEOF_INT - 1) / SIZEOF_INT * SIZEOF_INT);
++       ((((ulonglong)(int*)ptr) + SIZEOF_INT - 1) / SIZEOF_INT * SIZEOF_INT);
+ 
+-    DBUG_ASSERT(((ulonglong)(intptr)ptr) >= SIZEOF_INT);
++    DBUG_ASSERT(((ulonglong)(int*)ptr) >= SIZEOF_INT);
+     if (end_words > ptr)
+     {
+       while (end > end_words && end[-1] == 0x20)
+diff --git a/include/my_dir.h b/include/my_dir.h
+index 1ee002c..b22f8ac 100644
+--- a/include/my_dir.h
++++ b/include/my_dir.h
+@@ -36,7 +36,8 @@ extern "C" {
+ #define MY_S_ISGID	S_ISGID /* set group id on execution */
+ #define MY_S_ISVTX	S_ISVTX /* save swapped text even after use */
+ #define MY_S_IREAD	S_IREAD /* read permission, owner */
+-#define MY_S_IWRITE	S_IWRITE	/* write permission, owner */
++    // #define MY_S_IWRITE	S_IWRITE	/* write permission, owner */
++#define MY_S_IWRITE	00200	/* write permission, owner */
+ #define MY_S_IEXEC	S_IEXEC /* execute/search permission, owner */
+ 
+ #define MY_S_ISDIR(m)	(((m) & MY_S_IFMT) == MY_S_IFDIR)
+diff --git a/include/my_global.h b/include/my_global.h
+index 85f2078..53b251d 100644
+--- a/include/my_global.h
++++ b/include/my_global.h
+@@ -1395,7 +1395,7 @@ do { doubleget_union _tmp; \
+  *  Include standard definitions of operator new and delete.
+  */
+ #ifdef __cplusplus
+-#include <new>
++// #include <new>
+ #endif
+ 
+ /* Length of decimal number represented by INT32. */
+diff --git a/include/myisam.h b/include/myisam.h
+index dc9eac8..f571487 100644
+--- a/include/myisam.h
++++ b/include/myisam.h
+@@ -252,7 +252,7 @@ extern char * myisam_log_filename;		/* Name of logfile */
+ extern ulong myisam_block_size;
+ extern ulong myisam_concurrent_insert;
+ extern my_bool myisam_flush,myisam_delay_key_write,myisam_single_user;
+-extern my_off_t myisam_max_temp_length;
++extern ulonglong myisam_max_temp_length;
+ extern ulong myisam_data_pointer_size;
+ 
+ /* usually used to check if a symlink points into the mysql data home */
+diff --git a/libmysql/libmysql.c b/libmysql/libmysql.c
+index a6bb617..fcb1628 100644
+--- a/libmysql/libmysql.c
++++ b/libmysql/libmysql.c
+@@ -67,6 +67,7 @@
+ ulong 		net_buffer_length=8192;
+ ulong		max_allowed_packet= 1024L*1024L*1024L;
+ 
++#define ushort unsigned short
+ 
+ #ifdef EMBEDDED_LIBRARY
+ #undef net_flush
+diff --git a/mysys/my_lib.c b/mysys/my_lib.c
+index 71969f2..a36c0b9 100644
+--- a/mysys/my_lib.c
++++ b/mysys/my_lib.c
+@@ -151,7 +151,7 @@ MY_DIR	*my_dir(const char *path, myf MyFlags)
+       bzero(finfo.mystat, sizeof(MY_STAT));
+       (void) strmov(tmp_file,dp->d_name);
+       (void) my_stat(tmp_path, finfo.mystat, MyFlags);
+-      if (!(finfo.mystat->st_mode & MY_S_IREAD))
++      if (!(finfo.mystat->st_mode & 0))
+         continue;
+     }
+     else
+diff --git a/plugin/daemon_example/daemon_example.cc b/plugin/daemon_example/daemon_example.cc
+index ac4841b..f545ea2 100644
+--- a/plugin/daemon_example/daemon_example.cc
++++ b/plugin/daemon_example/daemon_example.cc
+@@ -161,7 +161,7 @@ static int daemon_example_plugin_deinit(void *p)
+   time_t result= time(NULL);
+   struct tm tm_tmp;
+ 
+-  pthread_cancel(con->heartbeat_thread);
++  // pthread_cancel(con->heartbeat_thread);
+ 
+   localtime_r(&result, &tm_tmp);
+   my_snprintf(buffer, sizeof(buffer),
+diff --git a/sql-common/client.c b/sql-common/client.c
+index 1e98ead..5fbfc2a 100644
+--- a/sql-common/client.c
++++ b/sql-common/client.c
+@@ -115,6 +115,8 @@ my_bool	net_flush(NET *net);
+ #define old_password_plugin_name    "mysql_old_password"
+ 
+ 
++#define ushort unsigned short
++
+ uint		mysql_port=0;
+ char		*mysql_unix_port= 0;
+ const char	*unknown_sqlstate= "HY000";
+diff --git a/sql-common/client_plugin.c b/sql-common/client_plugin.c
+index 75faeb7..b1b170a 100644
+--- a/sql-common/client_plugin.c
++++ b/sql-common/client_plugin.c
+@@ -248,8 +248,8 @@ int mysql_client_plugin_init()
+ 
+   pthread_mutex_lock(&LOCK_load_client_plugin);
+ 
+-  for (builtin= mysql_client_builtins; *builtin; builtin++)
+-    add_plugin(&mysql, *builtin, 0, 0, 0);
++  for (builtin= mysql_client_builtins; *builtin; builtin++) {}
++  //      add_plugin(&mysql, *builtin, 0, 0, (va_list)0);
+ 
+   pthread_mutex_unlock(&LOCK_load_client_plugin);
+ 
+@@ -306,8 +306,8 @@ mysql_client_register_plugin(MYSQL *mysql,
+                              plugin->name, "it is already loaded");
+     plugin= NULL;
+   }
+-  else
+-    plugin= add_plugin(mysql, plugin, 0, 0, 0);
++  else {}
++  //      plugin= add_plugin(mysql, plugin, 0, 0, (va_list)0);
+ 
+   pthread_mutex_unlock(&LOCK_load_client_plugin);
+   return plugin;
+diff --git a/sql/field.cc b/sql/field.cc
+index 749d5d8..fc4e9f1 100644
+--- a/sql/field.cc
++++ b/sql/field.cc
+@@ -4283,6 +4283,7 @@ void Field_float::sort_string(uchar *to,uint length __attribute__((unused)))
+     }
+     else
+     {
++        #define ushort unsigned short
+       ushort exp_part=(((ushort) tmp[0] << 8) | (ushort) tmp[1] |
+ 		       (ushort) 32768);
+       exp_part+= (ushort) 1 << (16-1-FLT_EXP_DIG);
+diff --git a/sql/filesort.cc b/sql/filesort.cc
+index e829721..c2d2034 100644
+--- a/sql/filesort.cc
++++ b/sql/filesort.cc
+@@ -1708,6 +1708,7 @@ void change_double_for_sort(double nr,uchar *to)
+     }
+     else
+     {					/* Set high and move exponent one up */
++        #define ushort unsigned short
+       ushort exp_part=(((ushort) tmp[0] << 8) | (ushort) tmp[1] |
+ 		       (ushort) 32768);
+       exp_part+= (ushort) 1 << (16-1-DBL_EXP_DIG);
+diff --git a/sql/item_sum.cc b/sql/item_sum.cc
+index e194907..211a839 100644
+--- a/sql/item_sum.cc
++++ b/sql/item_sum.cc
+@@ -3066,6 +3066,7 @@ Item_func_group_concat(Name_resolution_context *context_arg,
+   memcpy(orig_args, args, sizeof(Item*) * arg_count);
+ }
+ 
++// #include <new>
+ 
+ Item_func_group_concat::Item_func_group_concat(THD *thd,
+                                                Item_func_group_concat *item)
+@@ -3108,7 +3109,7 @@ Item_func_group_concat::Item_func_group_concat(THD *thd,
+       It's also necessary to update ORDER::next pointer
+       so that it points to new ORDER element.
+     */
+-    new (tmp) st_order(*(item->order[i])); 
++    // new (tmp) st_order(*(item->order[i])); 
+     tmp->next= (i + 1 == arg_count_order) ? NULL : (tmp + 1);
+     order[i]= tmp;
+   }
+diff --git a/sql/log.cc b/sql/log.cc
+index a5e99f3..2e667ff 100644
+--- a/sql/log.cc
++++ b/sql/log.cc
+@@ -4620,6 +4620,7 @@ int THD::binlog_setup_trx_data()
+   }
+   thd_set_ha_data(this, binlog_hton, cache_mngr);
+ 
++  /*
+   cache_mngr= new (thd_get_ha_data(this, binlog_hton))
+               binlog_cache_mngr(max_binlog_stmt_cache_size,
+                                 max_binlog_cache_size,
+@@ -4627,6 +4628,7 @@ int THD::binlog_setup_trx_data()
+                                 &binlog_stmt_cache_disk_use,
+                                 &binlog_cache_use,
+                                 &binlog_cache_disk_use);
++  */
+   DBUG_RETURN(0);
+ }
+ 
+diff --git a/sql/log_event.cc b/sql/log_event.cc
+index d2682a3..d040184 100644
+--- a/sql/log_event.cc
++++ b/sql/log_event.cc
+@@ -8793,10 +8793,12 @@ int Table_map_log_event::do_apply_event(Relay_log_info const *rli)
+       inside Relay_log_info::clear_tables_to_lock() by calling the
+       table_def destructor explicitly.
+     */
++    /*
+     new (&table_list->m_tabledef)
+       table_def(m_coltype, m_colcnt,
+                 m_field_metadata, m_field_metadata_size,
+                 m_null_bits, m_flags);
++    */
+     table_list->m_tabledef_valid= TRUE;
+     table_list->m_conv_table= NULL;
+     table_list->open_type= OT_BASE_ONLY;
+diff --git a/sql/mem_root_array.h b/sql/mem_root_array.h
+index 9dc9638..a314707 100644
+--- a/sql/mem_root_array.h
++++ b/sql/mem_root_array.h
+@@ -123,7 +123,7 @@ public:
+     {
+       Element_type *new_p= &array[ix];
+       Element_type *old_p= &m_array[ix];
+-      new (new_p) Element_type(*old_p);         // Copy into new location.
++      // new (new_p) Element_type(*old_p);         // Copy into new location.
+       if (!has_trivial_destructor)
+         old_p->~Element_type();                 // Destroy the old element.
+     }
+@@ -151,7 +151,7 @@ public:
+     if (m_size == m_capacity && reserve(m_capacity * expansion_factor))
+       return true;
+     Element_type *p= &m_array[m_size++];
+-    new (p) Element_type(element);
++    // new (p) Element_type(element);
+     return false;
+   }
+ 
+diff --git a/sql/rpl_handler.cc b/sql/rpl_handler.cc
+index c784001..8ca0fb3 100644
+--- a/sql/rpl_handler.cc
++++ b/sql/rpl_handler.cc
+@@ -102,7 +102,7 @@ int delegates_init()
+   void *place_trans_mem= trans_mem.data;
+   void *place_storage_mem= storage_mem.data;
+ 
+-  transaction_delegate= new (place_trans_mem) Trans_delegate;
++  // transaction_delegate= new (place_trans_mem) Trans_delegate;
+ 
+   if (!transaction_delegate->is_inited())
+   {
+@@ -111,7 +111,7 @@ int delegates_init()
+     return 1;
+   }
+ 
+-  binlog_storage_delegate= new (place_storage_mem) Binlog_storage_delegate;
++  // binlog_storage_delegate= new (place_storage_mem) Binlog_storage_delegate;
+ 
+   if (!binlog_storage_delegate->is_inited())
+   {
+@@ -124,7 +124,7 @@ int delegates_init()
+   void *place_transmit_mem= transmit_mem.data;
+   void *place_relay_io_mem= relay_io_mem.data;
+ 
+-  binlog_transmit_delegate= new (place_transmit_mem) Binlog_transmit_delegate;
++  // binlog_transmit_delegate= new (place_transmit_mem) Binlog_transmit_delegate;
+ 
+   if (!binlog_transmit_delegate->is_inited())
+   {
+@@ -133,7 +133,7 @@ int delegates_init()
+     return 1;
+   }
+ 
+-  binlog_relay_io_delegate= new (place_relay_io_mem) Binlog_relay_IO_delegate;
++  // binlog_relay_io_delegate= new (place_relay_io_mem) Binlog_relay_IO_delegate;
+ 
+   if (!binlog_relay_io_delegate->is_inited())
+   {
+diff --git a/sql/rpl_handler.h b/sql/rpl_handler.h
+index 4743fff..38a8252 100644
+--- a/sql/rpl_handler.h
++++ b/sql/rpl_handler.h
+@@ -160,6 +160,7 @@ public:
+ };
+ 
+ #ifdef HAVE_REPLICATION
++#define ushort unsigned short
+ class Binlog_transmit_delegate
+   :public Delegate {
+ public:
+diff --git a/sql/sql_lex.cc b/sql/sql_lex.cc
+index 3c9e695..cd14df2 100644
+--- a/sql/sql_lex.cc
++++ b/sql/sql_lex.cc
+@@ -128,11 +128,12 @@ void lex_init(void)
+ {
+   uint i;
+   DBUG_ENTER("lex_init");
++  /*
+   for (i=0 ; i < array_elements(symbols) ; i++)
+-    symbols[i].length=(uchar) strlen(symbols[i].name);
++      symbols[i].length=(uchar) strlen(symbols[i].name);
+   for (i=0 ; i < array_elements(sql_functions) ; i++)
+-    sql_functions[i].length=(uchar) strlen(sql_functions[i].name);
+-
++      sql_functions[i].length=(uchar) strlen(sql_functions[i].name);
++  */
+   DBUG_VOID_RETURN;
+ }
+ 
+@@ -484,7 +485,7 @@ static int find_keyword(Lex_input_stream *lip, uint len, bool function)
+ {
+   const char *tok= lip->get_tok_start();
+ 
+-  SYMBOL *symbol= get_hash_symbol(tok, len, function);
++  SYMBOL *symbol= NULL;// get_hash_symbol(tok, len, function);
+   if (symbol)
+   {
+     lip->yylval->symbol.symbol=symbol;
+@@ -519,7 +520,7 @@ static int find_keyword(Lex_input_stream *lip, uint len, bool function)
+ bool is_keyword(const char *name, uint len)
+ {
+   DBUG_ASSERT(len != 0);
+-  return get_hash_symbol(name,len,0)!=0;
++  return false;//get_hash_symbol(name,len,0)!=0;
+ }
+ 
+ /**
+@@ -535,7 +536,8 @@ bool is_keyword(const char *name, uint len)
+ bool is_lex_native_function(const LEX_STRING *name)
+ {
+   DBUG_ASSERT(name != NULL);
+-  return (get_hash_symbol(name->str, (uint) name->length, 1) != 0);
++  return false;
++  // return (get_hash_symbol(name->str, (uint) name->length, 1) != 0);
+ }
+ 
+ /* make a copy of token before ptr and set yytoklen */
+@@ -3147,7 +3149,7 @@ void st_select_lex::fix_prepare_information(THD *thd, Item **conds,
+       if (!group_list_ptrs)
+       {
+         void *mem= thd->stmt_arena->alloc(sizeof(Group_list_ptrs));
+-        group_list_ptrs= new (mem) Group_list_ptrs(thd->stmt_arena->mem_root);
++        // group_list_ptrs= new (mem) Group_list_ptrs(thd->stmt_arena->mem_root);
+       }
+       group_list_ptrs->reserve(group_list.elements);
+       for (ORDER *order= group_list.first; order; order= order->next)
+diff --git a/sql/sql_prepare.cc b/sql/sql_prepare.cc
+index f3deafc..f5ba8f4 100644
+--- a/sql/sql_prepare.cc
++++ b/sql/sql_prepare.cc
+@@ -965,7 +965,7 @@ static bool setup_conversion_functions(Prepared_statement *stmt,
+     THD *thd= stmt->thd;
+     for (; it < end; ++it)
+     {
+-      ushort typecode;
++      unsigned short typecode;
+       const uint signed_bit= 1 << 15;
+ 
+       if (read_pos >= data_end)
+diff --git a/sql/sql_repl.h b/sql/sql_repl.h
+index 7dc58c4..f3fbcf4 100644
+--- a/sql/sql_repl.h
++++ b/sql/sql_repl.h
+@@ -63,7 +63,7 @@ typedef struct st_load_file_info
+ 
+ int log_loaded_block(IO_CACHE* file);
+ int init_replication_sys_vars();
+-void mysql_binlog_send(THD* thd, char* log_ident, my_off_t pos, ushort flags);
++void mysql_binlog_send(THD* thd, char* log_ident, my_off_t pos, unsigned short flags);
+ 
+ #endif /* HAVE_REPLICATION */
+ 
+diff --git a/storage/federated/ha_federated.cc b/storage/federated/ha_federated.cc
+index db2f749..619d6a5 100644
+--- a/storage/federated/ha_federated.cc
++++ b/storage/federated/ha_federated.cc
+@@ -625,11 +625,11 @@ int get_connection(MEM_ROOT *mem_root, FEDERATED_SHARE *share)
+   share->password= server->password;
+   share->database= server->db;
+ #ifndef I_AM_PARANOID
+-  share->port= server->port > 0 && server->port < 65536 ? 
++  //  share->port= server->port > 0 && server->port < 65536 ? 
+ #else
+-  share->port= server->port > 1023 && server->port < 65536 ? 
++  //  share->port= server->port > 1023 && server->port < 65536 ? 
+ #endif
+-               (ushort) server->port : MYSQL_PORT;
++  //           (unsigned short) server->port : MYSQL_PORT;
+   share->hostname= server->host;
+   if (!(share->socket= server->socket) &&
+       !strcmp(share->hostname, my_localhost))
+@@ -640,7 +640,7 @@ int get_connection(MEM_ROOT *mem_root, FEDERATED_SHARE *share)
+   DBUG_PRINT("info", ("share->password %s", share->password));
+   DBUG_PRINT("info", ("share->hostname %s", share->hostname));
+   DBUG_PRINT("info", ("share->database %s", share->database));
+-  DBUG_PRINT("info", ("share->port %d", share->port));
++  //  DBUG_PRINT("info", ("share->port %d", share->port));
+   DBUG_PRINT("info", ("share->socket %s", share->socket));
+   DBUG_RETURN(0);
+ 
+@@ -713,7 +713,7 @@ static int parse_url(MEM_ROOT *mem_root, FEDERATED_SHARE *share, TABLE *table,
+                    ER_FOREIGN_DATA_STRING_INVALID);
+   DBUG_ENTER("ha_federated::parse_url");
+ 
+-  share->port= 0;
++  // share->port= 0;
+   share->socket= 0;
+   DBUG_PRINT("info", ("share at %lx", (long unsigned int) share));
+   DBUG_PRINT("info", ("Length: %u", (uint) table->s->connect_string.length));
+@@ -848,8 +848,8 @@ static int parse_url(MEM_ROOT *mem_root, FEDERATED_SHARE *share, TABLE *table,
+       share->sport++;
+       if (share->sport[0] == '\0')
+         share->sport= NULL;
+-      else
+-        share->port= atoi(share->sport);
++      else{}
++      //        share->port= atoi(share->sport);
+     }
+ 
+     if (!(share->table_name= strchr(share->database, '/')))
+@@ -874,6 +874,7 @@ static int parse_url(MEM_ROOT *mem_root, FEDERATED_SHARE *share, TABLE *table,
+       share->hostname= NULL;
+   }
+ 
++  /*
+   if (!share->port)
+   {
+     if (!share->hostname || strcmp(share->hostname, my_localhost) == 0)
+@@ -881,12 +882,13 @@ static int parse_url(MEM_ROOT *mem_root, FEDERATED_SHARE *share, TABLE *table,
+     else
+       share->port= MYSQL_PORT;
+   }
++  */
+ 
+   DBUG_PRINT("info",
+              ("scheme: %s  username: %s  password: %s \
+                hostname: %s  port: %d  db: %s  tablename: %s",
+               share->scheme, share->username, share->password,
+-              share->hostname, share->port, share->database,
++              share->hostname, 0, /*share->port*/, share->database,
+               share->table_name));
+ 
+   DBUG_RETURN(0);
+@@ -3186,7 +3188,7 @@ int ha_federated::real_connect()
+                           share->username,
+                           share->password,
+                           share->database,
+-                          share->port,
++                          0, //share->port,
+                           share->socket, 0))
+   {
+     stash_remote_error();
+diff --git a/storage/federated/ha_federated.h b/storage/federated/ha_federated.h
+index da20bf1..5b1422f 100644
+--- a/storage/federated/ha_federated.h
++++ b/storage/federated/ha_federated.h
+@@ -68,7 +68,7 @@ typedef struct st_federated_share {
+   char *socket;
+   char *sport;
+   int share_key_length;
+-  ushort port;
++  unsigned short port;
+ 
+   size_t table_name_length, server_name_length, connect_string_length, use_count;
+   mysql_mutex_t mutex;
+diff --git a/storage/innobase/include/os0proc.h b/storage/innobase/include/os0proc.h
+index fd46bd7..cfbca18 100644
+--- a/storage/innobase/include/os0proc.h
++++ b/storage/innobase/include/os0proc.h
+@@ -31,7 +31,7 @@ Created 9/30/1995 Heikki Tuuri
+ 
+ #ifdef UNIV_LINUX
+ #include <sys/ipc.h>
+-#include <sys/shm.h>
++#include <linux/shm.h>
+ #endif
+ 
+ typedef void*			os_process_t;
+diff --git a/storage/myisam/ha_myisam.cc b/storage/myisam/ha_myisam.cc
+index 72a29cd..83460cf 100644
+--- a/storage/myisam/ha_myisam.cc
++++ b/storage/myisam/ha_myisam.cc
+@@ -66,6 +66,7 @@ static MYSQL_SYSVAR_ULONG(data_pointer_size, myisam_data_pointer_size,
+ 
+ #define MB (1024*1024)
+ static MYSQL_SYSVAR_ULONGLONG(max_sort_file_size, myisam_max_temp_length,
++//static MYSQL_SYSVAR_ULONG(max_sort_file_size, myisam_max_temp_length,
+   PLUGIN_VAR_RQCMDARG, "Don't use the fast sort index method to created "
+   "index if the temporary file would get bigger than this", NULL, NULL,
+   LONG_MAX/MB*MB, 0, MAX_FILE_SIZE, MB);
+diff --git a/storage/myisam/mi_create.c b/storage/myisam/mi_create.c
+index 8873b8f..623d6ac 100644
+--- a/storage/myisam/mi_create.c
++++ b/storage/myisam/mi_create.c
+@@ -495,6 +495,8 @@ int mi_create(const char *name,uint keys,MI_KEYDEF *keydefs,
+     goto err_no_lock;
+   }
+ 
++#define ushort unsigned short
++
+   bmove(share.state.header.file_version,(uchar*) myisam_file_magic,4);
+   ci->old_options=options| (ci->old_options & HA_OPTION_TEMP_COMPRESS_RECORD ?
+ 			HA_OPTION_COMPRESS_RECORD |
+@@ -513,7 +515,7 @@ int mi_create(const char *name,uint keys,MI_KEYDEF *keydefs,
+   share.state.unique=	(ulong) 0;
+   share.state.update_count=(ulong) 0;
+   share.state.version=	(ulong) time((time_t*) 0);
+-  share.state.sortkey=  (ushort) ~0;
++  share.state.sortkey=  (ushort) 1 ;
+   share.state.auto_increment=ci->auto_increment;
+   share.options=options;
+   share.base.rec_reflength=pointer;
+diff --git a/storage/myisam/mi_dbug.c b/storage/myisam/mi_dbug.c
+index d8d2273..bb2ac12 100644
+--- a/storage/myisam/mi_dbug.c
++++ b/storage/myisam/mi_dbug.c
+@@ -17,6 +17,8 @@
+ 
+ #include "myisamdef.h"
+ 
++#define ushort unsigned short
++
+ 	/* Print a key in user understandable format */
+ 
+ void _mi_print_key(FILE *stream, register HA_KEYSEG *keyseg,
+diff --git a/storage/myisam/myisamdef.h b/storage/myisam/myisamdef.h
+index dc8168b..2c6e0d1 100644
+--- a/storage/myisam/myisamdef.h
++++ b/storage/myisam/myisamdef.h
+@@ -23,6 +23,8 @@
+ #include <thr_lock.h>
+ #include <mysql/psi/mysql_file.h>
+ 
++#define ushort unsigned short
++
+ /* undef map from my_nosys; We need test-if-disk full */
+ #if defined(my_write)
+ #undef my_write
+diff --git a/tests/mysql_client_test.c b/tests/mysql_client_test.c
+index e600d82..256c866 100644
+--- a/tests/mysql_client_test.c
++++ b/tests/mysql_client_test.c
+@@ -6506,7 +6506,7 @@ static void test_ushort_bug()
+ {
+   MYSQL_STMT *stmt;
+   MYSQL_BIND my_bind[4];
+-  ushort     short_value;
++  unsigned short     short_value;
+   uint32     long_value;
+   ulong      s_length, l_length, ll_length, t_length;
+   ulonglong  longlong_value;

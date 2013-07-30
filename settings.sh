@@ -12,7 +12,7 @@ NDK_PLATFORM_VERSION=8
 NDK_SYSROOT=$NDK_BASE/platforms/android-$NDK_PLATFORM_VERSION/arch-arm
 NDK_UNAME=`uname -s | tr '[A-Z]' '[a-z]'`
 # NDK_TOOLCHAIN_BASE=$NDK_BASE/toolchains/arm-linux-androideabi-4.4.3/prebuilt/$NDK_UNAME-x86
-NDK_TOOLCHAIN_BASE=$NDK_BASE/toolchains/arm-linux-androideabi-4.7/prebuilt/$NDK_UNAME-x86_64
+NDK_TOOLCHAIN_BASE=$NDK_BASE/toolchains/arm-linux-androideabi-4.8/prebuilt/$NDK_UNAME-x86_64
 ACC="$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-gcc --sysroot=$NDK_SYSROOT"
 # ACC="$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-gcc"
 ACXX="$NDK_TOOLCHAIN_BASE/bin/arm-linux-androideabi-g++ --sysroot=$NDK_SYSROOT"
