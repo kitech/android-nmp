@@ -1,0 +1,116 @@
+diff --git a/include/my_dir.h b/include/my_dir.h
+index 1ee002c..858a9a6 100644
+--- a/include/my_dir.h
++++ b/include/my_dir.h
+@@ -35,8 +35,8 @@ extern "C" {
+ #define MY_S_ISUID	S_ISUID /* set user id on execution */
+ #define MY_S_ISGID	S_ISGID /* set group id on execution */
+ #define MY_S_ISVTX	S_ISVTX /* save swapped text even after use */
+-#define MY_S_IREAD	S_IREAD /* read permission, owner */
+-#define MY_S_IWRITE	S_IWRITE	/* write permission, owner */
++#define MY_S_IREAD S_IRUSR // S_IRUSR // S_IRUSR // S_IRUSR // S_IRUSR // S_IRUSR // S_IRUSR // S_IRUSR // S_IRUSR //	S_IRUSR /* read permission, owner */
++#define MY_S_IWRITE S_IWUSR // S_IWUSR // S_IWUSR // S_IWUSR // S_IWUSR // S_IWUSR // S_IWUSR // S_IWUSR // S_IWUSR // S_IWUSR //	S_IWRITE	/* write permission, owner */
+ #define MY_S_IEXEC	S_IEXEC /* execute/search permission, owner */
+ 
+ #define MY_S_ISDIR(m)	(((m) & MY_S_IFMT) == MY_S_IFDIR)
+diff --git a/include/my_global.h b/include/my_global.h
+index 85f2078..7007deb 100644
+--- a/include/my_global.h
++++ b/include/my_global.h
+@@ -474,6 +474,10 @@ typedef unsigned int uint;
+ typedef unsigned short ushort;
+ #endif
+ 
++#if !defined(ushort)
++typedef unsigned short ushort;
++#endif
++
+ #define swap_variables(t, a, b) { t dummy; dummy= a; a= b; b= dummy; }
+ #define test(a)		((a) ? 1 : 0)
+ #define set_if_bigger(a,b)  do { if ((a) < (b)) (a)=(b); } while(0)
+@@ -957,10 +961,11 @@ typedef unsigned long long os_off_t;
+ #else
+ typedef off_t os_off_t;
+ #if SIZEOF_OFF_T > 4
+-typedef ulonglong my_off_t;
++//typedef ulonglong my_off_t;
+ #else
+-typedef unsigned long my_off_t;
++//typedef unsigned long my_off_t;
+ #endif
++typedef my_ulonglong my_off_t;
+ #endif /*_WIN32*/
+ #define MY_FILEPOS_ERROR	(~(my_off_t) 0)
+ 
+diff --git a/plugin/daemon_example/daemon_example.cc b/plugin/daemon_example/daemon_example.cc
+index ac4841b..71753ec 100644
+--- a/plugin/daemon_example/daemon_example.cc
++++ b/plugin/daemon_example/daemon_example.cc
+@@ -161,7 +161,8 @@ static int daemon_example_plugin_deinit(void *p)
+   time_t result= time(NULL);
+   struct tm tm_tmp;
+ 
+-  pthread_cancel(con->heartbeat_thread);
++  // pthread_cancel(con->heartbeat_thread);
++  void(con->heartbeat_thread);
+ 
+   localtime_r(&result, &tm_tmp);
+   my_snprintf(buffer, sizeof(buffer),
+diff --git a/sql-common/client_plugin.c b/sql-common/client_plugin.c
+index 75faeb7..f7e9e38 100644
+--- a/sql-common/client_plugin.c
++++ b/sql-common/client_plugin.c
+@@ -248,8 +248,9 @@ int mysql_client_plugin_init()
+ 
+   pthread_mutex_lock(&LOCK_load_client_plugin);
+ 
++  va_list args;
+   for (builtin= mysql_client_builtins; *builtin; builtin++)
+-    add_plugin(&mysql, *builtin, 0, 0, 0);
++      add_plugin(&mysql, *builtin, 0, 0, args);
+ 
+   pthread_mutex_unlock(&LOCK_load_client_plugin);
+ 
+@@ -298,6 +299,8 @@ mysql_client_register_plugin(MYSQL *mysql,
+ 
+   pthread_mutex_lock(&LOCK_load_client_plugin);
+ 
++  va_list args;
++
+   /* make sure the plugin wasn't loaded meanwhile */
+   if (find_plugin(plugin->name, plugin->type))
+   {
+@@ -307,7 +310,7 @@ mysql_client_register_plugin(MYSQL *mysql,
+     plugin= NULL;
+   }
+   else
+-    plugin= add_plugin(mysql, plugin, 0, 0, 0);
++    plugin= add_plugin(mysql, plugin, 0, 0, args);
+ 
+   pthread_mutex_unlock(&LOCK_load_client_plugin);
+   return plugin;
+diff --git a/storage/innobase/include/os0proc.h b/storage/innobase/include/os0proc.h
+index fd46bd7..cfbca18 100644
+--- a/storage/innobase/include/os0proc.h
++++ b/storage/innobase/include/os0proc.h
+@@ -31,7 +31,7 @@ Created 9/30/1995 Heikki Tuuri
+ 
+ #ifdef UNIV_LINUX
+ #include <sys/ipc.h>
+-#include <sys/shm.h>
++#include <linux/shm.h>
+ #endif
+ 
+ typedef void*			os_process_t;
+diff --git a/storage/myisam/mi_create.c b/storage/myisam/mi_create.c
+index 8873b8f..15621e0 100644
+--- a/storage/myisam/mi_create.c
++++ b/storage/myisam/mi_create.c
+@@ -25,6 +25,7 @@
+ #endif
+ #include <m_ctype.h>
+ 
++
+ /*
+   Old options is used when recreating database, from myisamchk
+ */
