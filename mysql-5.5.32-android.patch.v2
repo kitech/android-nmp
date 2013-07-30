@@ -102,15 +102,3 @@ index fd46bd7..cfbca18 100644
  #endif
  
  typedef void*			os_process_t;
-diff --git a/storage/myisam/mi_create.c b/storage/myisam/mi_create.c
-index 8873b8f..15621e0 100644
---- a/storage/myisam/mi_create.c
-+++ b/storage/myisam/mi_create.c
-@@ -25,6 +25,7 @@
- #endif
- #include <m_ctype.h>
- 
-+
- /*
-   Old options is used when recreating database, from myisamchk
- */
