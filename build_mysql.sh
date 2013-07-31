@@ -20,12 +20,13 @@ EDEFS="-DLC_CTYPE=0 -DLC_NUMERIC=1 -DLC_TIME=2 -DLC_COLLATE=3 -DLC_MONETARY=4 -D
 CXX_DEFS="-DHAVE_CXX_NEW=1 -DHAVE_CXXABI_H=1 -Dpthread_cancel=void"
 
 #rm -vf CMakeCache.txt
-CC="$ACC" CXX="$ACXX" LD=$ALD LDFLAGS="-lc -L$INS_DIR/ncurses-5.9/lib -lncurses $INS_DIR/ncurses-5.9/lib/libncurses.a -L$INS_DIR/readline-6.2/lib -lreadline $INS_DIR/readline-6.2/lib/libreadline.a" CXXFLAGS="-DANDROID -DNGX_SYS_NERR=1 -DIOV_MAX=16 $EDEFS_123 $CXX_DEFS -I/opt/android-ndk/sources/cxx-stl/gabi++/include/ -I$TOP_DIR/compat -I$TOP_DIR/compat/libcrypt -I$INS_DIR/ncurses-5.9/include/ncurses -I$INS_DIR/ncurses-5.9/include/ -I$INS_DIR/readline-6.2/include " cmake ../mysql-5.5.32/ -DCMAKE_INSTALL_PREFIX=$INS_DIR/mysql-$PKGVER -DCMAKE_VERBOSE_MAKEFILE=on -DWITH_FEDERATED_STORAGE_ENGINE=off -DWITH_UNIT_TESTS=off -DWITH_LIBEDIT=off -DHAVE_CURSES_H=1
+CC="$ACC" CXX="$ACXX" LD=$ALD LDFLAGS="-lc -L$INS_DIR/ncurses-5.9/lib -lncurses $INS_DIR/ncurses-5.9/lib/libncurses.a -L$INS_DIR/readline-6.2/lib -lreadline $INS_DIR/readline-6.2/lib/libreadline.a" CXXFLAGS="-DANDROID -DNGX_SYS_NERR=1 -DIOV_MAX=16 $EDEFS_123 $CXX_DEFS -I/opt/android-ndk/sources/cxx-stl/gabi++/include/ -I$TOP_DIR/compat -I$TOP_DIR/compat/libcrypt -I$INS_DIR/ncurses-5.9/include/ncurses -I$INS_DIR/ncurses-5.9/include/ -I$INS_DIR/readline-6.2/include " cmake ../mysql-5.5.32/ -DCMAKE_INSTALL_PREFIX=$INS_DIR/mysql-$PKGVER -DCMAKE_VERBOSE_MAKEFILE=on -DWITH_UNIT_TESTS=off -DWITH_LIBEDIT=off -DHAVE_CURSES_H=1 -DWITH_MYISAM_STORAGE_ENGINE=on -DWITHOUT_ARCHIVE_STORAGE_ENGINE=on -DWITHOUT_FEDERATED_STORAGE_ENGINE=on -DWITHOUT_INNOBASE_STORAGE_ENGINE=on -DWITHOUT_BLACKHOLE_STORAGE_ENGINE=on -DWITHOUT_CSV_STORAGE_ENGINE=on -DWITHOUT_MYISAMMRG_STORAGE_ENGINE=on -DWITH_PERFSCHEMA_STORAGE_ENGINE=on -DWITH_MAX_NO_NDB=on
 
 
 ####
 sed -i 's/MY_S_IREAD/MY_S_IREAD S_IRUSR \/\//g' $TOP_DIR/mysql-${PKGVER}/include/my_dir.h
 sed -i 's/MY_S_IWRITE/MY_S_IWRITE S_IWUSR \/\//g' $TOP_DIR/mysql-${PKGVER}/include/my_dir.h 
+sed -i 's/<sys\/shm.h>/<linux\/shm.h>/g' $TOP_DIR/mysql-${PKGVER}/storage/innobase/include/os0proc.h
 
 ####
 ESC_INS_DIR=$(echo $INS_DIR | sed 's/\//\\\//g')

@@ -1,11 +1,12 @@
-mysql编译失败
+sdcard文件系统转换为ext4格式 -- OK make_ext4fs
+mysql编译失败 -- OK
+mysql精简，只保留myisam引擎和innodb引擎
 PHP的dns.c功能不全
 PHP-5.5的password功能
 PHP的mysqlnd -- OK 
 libmcrypt库
 二进制的程序和库文件需要strip，清理不需要安装上去的文件。 -- OK
 fpm运行phpmyadmin崩溃，child 14633 exited on signal 11
-
 fpm崩溃原因：
 //date_default_timezone_set(date_default_timezone_get());
 
